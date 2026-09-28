@@ -158,7 +158,18 @@ extension Merge on GitRepository {
       entries.add(entry);
     }
 
-    var newTree = GitTree.create(entries);
+    // Canonicalize modes before building the merged tree: entries coming from
+    // either side may carry non-canonical modes (e.g. 0100600) that must not
+    // be written back into tree objects.
+    var canonicalEntries = entries
+        .map((e) => GitTreeEntry(
+              mode: GitFileMode.canonicalize(e.mode),
+              name: e.name,
+              hash: e.hash,
+            ))
+        .toList();
+
+    var newTree = GitTree.create(canonicalEntries);
     objStorage.writeObject(newTree);
 
     return newTree.hash;

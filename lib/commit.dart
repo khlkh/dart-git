@@ -115,7 +115,7 @@ extension Commit on GitRepository {
       }
 
       var leaf = GitTreeEntry(
-        mode: entry.mode,
+        mode: GitFileMode.canonicalize(entry.mode),
         name: fileName,
         hash: entry.hash,
       );

@@ -24,6 +24,27 @@ class GitFileMode extends Equatable {
   static final Symlink = GitFileMode(int.parse('120000', radix: 8));
   static final Submodule = GitFileMode(int.parse('160000', radix: 8));
 
+  /// Normalizes a mode to the canonical git representation.
+  ///
+  /// git only stores the executable bit for regular blobs; filesystem
+  /// permission bits must not leak into tree objects (a 0600 file must not be
+  /// written as 0100600, which go-git rejects as a malformed mode).
+  /// Symlinks, submodules and directories pass through unchanged.
+  static GitFileMode canonicalize(GitFileMode mode) {
+    if (mode == Symlink || mode == Submodule || mode == Dir) {
+      return mode;
+    }
+    final typeMask = int.parse('170000', radix: 8);
+    final regularFile = int.parse('100000', radix: 8);
+    final execBits = int.parse('111', radix: 8);
+    final typeBits = mode.val & typeMask;
+    if (typeBits == regularFile) {
+      // Regular file: keep only the executable bit.
+      return (mode.val & execBits) != 0 ? Executable : Regular;
+    }
+    return mode;
+  }
+
   @override
   List<Object> get props => [val];
 
